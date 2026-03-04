@@ -3,34 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="OBS Green Screen Ticker – GTA V Pro Edition">
     <title>OBS Green Screen Ticker - GTA V Pro Edition</title>
-    <style>
-        /* Oswald font perfectly mimics the condensed, bold look of the GTA V UI */
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
 
+    <!-- Preconnect for faster Google Fonts resolution -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Oswald: condensed bold font that closely mimics the GTA V UI style -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap">
+
+    <style>
         body {
             margin: 0;
             padding: 0;
-            /* Pure Green Screen Background for easy Chroma Keying in OBS */
-            background-color: #00FF00; 
+            /* Pure green-screen background for easy Chroma Key in OBS */
+            background-color: #00FF00;
             overflow: hidden;
             font-family: 'Oswald', sans-serif;
         }
 
         .ticker-container {
             position: absolute;
-            bottom: 40px; 
+            bottom: 40px;
             width: 100%;
             overflow: hidden;
             white-space: nowrap;
-            /* Dark gradient background simulating the pause menu */
+            /* Dark gradient evoking the GTA V pause-menu style */
             background: linear-gradient(90deg, rgba(10,10,10,0.9) 0%, rgba(25,25,25,0.95) 50%, rgba(10,10,10,0.9) 100%);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.9);
             padding: 15px 0;
             display: flex;
+            /* 3D stacking context for GPU-composited children */
+            perspective: 1000px;
         }
 
-        /* The iconic GTA V Health (Green), Armor (Blue), and Special (Yellow) Bars */
+        /* GTA V status bars: Health (green), Armor (blue), Special (yellow) */
         .ticker-container::before {
             content: '';
             position: absolute;
@@ -38,17 +45,19 @@
             left: 0;
             width: 100%;
             height: 5px;
-            background: linear-gradient(90deg, 
-                #54b647 0%, #54b647 33%, /* Health */
-                #2277c9 33%, #2277c9 66%, /* Armor */
-                #f2d535 66%, #f2d535 100% /* Special */
+            background: linear-gradient(90deg,
+                #54b647 0%, #54b647 33%,
+                #2277c9 33%, #2277c9 66%,
+                #f2d535 66%, #f2d535 100%
             );
         }
 
         .ticker-text {
             display: inline-block;
             white-space: nowrap;
-            /* Speed control: 35s */
+            /* GPU-accelerated scroll: promote to its own compositing layer */
+            will-change: transform;
+            backface-visibility: hidden;
             animation: scroll-left 35s linear infinite;
         }
 
@@ -56,26 +65,26 @@
             display: inline-block;
             font-size: 38px;
             font-weight: 700;
-            color: #ffffff; /* Clean white text */
+            color: #ffffff;
             letter-spacing: 1.5px;
-            padding-right: 50px; 
+            padding-right: 50px;
             text-transform: uppercase;
-            /* Solid black drop shadow for maximum readability */
+            /* Bold drop-shadow for maximum readability over any game capture */
             text-shadow: 3px 3px 0px #000, 5px 5px 10px rgba(0,0,0,0.8);
         }
 
-        /* GTA Styling Classes */
-        .gta-money { color: #54b647; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(84, 182, 71, 0.6); }
-        .gta-wasted { color: #cc0000; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(204, 0, 0, 0.6); }
-        .gta-heist { color: #f2d535; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(242, 213, 53, 0.6); }
-        
-        /* Animated Police Siren Effect (Flashes Red and Blue) */
+        /* GTA-themed colour classes */
+        .gta-money  { color: #54b647; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(84,182,71,0.6); }
+        .gta-wasted { color: #cc0000; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(204,0,0,0.6); }
+        .gta-heist  { color: #f2d535; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(242,213,53,0.6); }
+
+        /* Police siren: alternates red → blue */
         .siren {
-            animation: police-lights 0.8s infinite;
             font-weight: 900;
+            animation: police-lights 0.8s infinite;
         }
 
-        /* Animated Pulsing Wanted Stars */
+        /* Pulsing wanted stars */
         .stars {
             display: inline-block;
             color: #ffffff;
@@ -83,7 +92,7 @@
             animation: star-pulse 1.5s infinite;
         }
 
-        /* Separator Star between messages */
+        /* Bullet separator between messages */
         .separator {
             color: #555;
             font-size: 24px;
@@ -94,73 +103,60 @@
 
         .emoji {
             display: inline-block;
-            font-size: 38px;
             vertical-align: text-bottom;
             margin: 0 10px;
             filter: drop-shadow(3px 3px 3px rgba(0,0,0,0.9));
         }
 
         /* --- ANIMATIONS --- */
+
+        /* translate3d triggers GPU compositing for a tear-free scroll in OBS */
         @keyframes scroll-left {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
+            0%   { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-50%, 0, 0); }
         }
 
         @keyframes police-lights {
-            0%, 49% { color: #ff0000; text-shadow: 3px 3px 0 #000, 0 0 20px #ff0000; } /* Red */
-            50%, 100% { color: #0066ff; text-shadow: 3px 3px 0 #000, 0 0 20px #0066ff; } /* Blue */
+            0%,  49% { color: #ff0000; text-shadow: 3px 3px 0 #000, 0 0 20px #ff0000; }
+            50%, 100% { color: #0066ff; text-shadow: 3px 3px 0 #000, 0 0 20px #0066ff; }
         }
 
         @keyframes star-pulse {
-            0%, 100% { transform: scale(1); text-shadow: 3px 3px 0 #000, 0 0 5px #fff; }
-            50% { transform: scale(1.1); text-shadow: 3px 3px 0 #000, 0 0 20px #fff; }
+            0%, 100% { transform: scale(1);   text-shadow: 3px 3px 0 #000, 0 0  5px #fff; }
+            50%       { transform: scale(1.1); text-shadow: 3px 3px 0 #000, 0 0 20px #fff; }
         }
     </style>
 </head>
 <body>
 
     <div class="ticker-container">
-        <!-- The inner wrapper animated to the left -->
+        <!-- Animated wrapper — cloned by JS below for a seamless infinite loop -->
         <div class="ticker-text">
-            
-            <!-- FIRST COPY OF THE TEXT -->
-            <div class="ticker-content">
-                Welcome to Los Santos <span class="emoji">🌴</span> Drop a <span class="gta-money">'W'</span> in the chat! 
+            <div class="ticker-content" id="ticker-source">
+                Welcome to Los Santos <span class="emoji">🌴</span> Drop a <span class="gta-money">'W'</span> in the chat!
                 <span class="separator">★</span>
-                
                 <span class="stars">⭐⭐⭐⭐⭐</span> WANTED LEVEL: Hit <span class="gta-money">LIKE</span> and <span class="siren">SUBSCRIBE</span> to lose the cops! <span class="emoji">🚁</span>
-                
                 <span class="separator">★</span>
                 All Chat is reading this instead of watching the road... <span class="emoji">💥🚗</span>
-                
                 <span class="separator">★</span>
                 Preparing for the next <span class="gta-heist">HEIST</span>! Who's joining the crew? <span class="emoji">💰🔫</span>
-                
                 <span class="separator">★</span>
                 <span class="gta-wasted">WASTED?</span> Never heard of it. Chat, what's our next move? <span class="emoji">🗺️</span>
                 <span class="separator">★</span>
             </div>
-
-            <!-- SECOND COPY OF THE TEXT (Must be exactly identical for seamless looping) -->
-            <div class="ticker-content">
-                Welcome to Los Santos <span class="emoji">🌴</span> Drop a <span class="gta-money">'W'</span> in the chat! 
-                <span class="separator">★</span>
-                
-                <span class="stars">⭐⭐⭐⭐⭐</span> WANTED LEVEL: Hit <span class="gta-money">LIKE</span> and <span class="siren">SUBSCRIBE</span> to lose the cops! <span class="emoji">🚁</span>
-                
-                <span class="separator">★</span>
-                All Chat is reading this instead of watching the road... <span class="emoji">💥🚗</span>
-                
-                <span class="separator">★</span>
-                Preparing for the next <span class="gta-heist">HEIST</span>! Who's joining the crew? <span class="emoji">💰🔫</span>
-                
-                <span class="separator">★</span>
-                <span class="gta-wasted">WASTED?</span> Never heard of it. Chat, what's our next move? <span class="emoji">🗺️</span>
-                <span class="separator">★</span>
-            </div>
-
         </div>
     </div>
+
+    <script>
+        // Append an exact clone of the ticker content so the CSS -50% loop is seamless.
+        // Doing this in JS keeps the HTML source DRY — edits only need to happen once.
+        (function () {
+            var tickerSource = document.getElementById('ticker-source');
+            var tickerClone  = tickerSource.cloneNode(true);
+            tickerClone.removeAttribute('id');
+            tickerSource.parentNode.appendChild(tickerClone);
+        }());
+    </script>
 
 </body>
 </html>
