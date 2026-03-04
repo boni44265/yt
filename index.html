@@ -6,156 +6,281 @@
     <meta name="description" content="OBS Green Screen Ticker – GTA V Pro Edition">
     <title>OBS Green Screen Ticker - GTA V Pro Edition</title>
 
-    <!-- Preconnect for faster Google Fonts resolution -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Oswald: condensed bold font that closely mimics the GTA V UI style -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap">
 
     <style>
-        body {
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
-            /* Pure green-screen background for easy Chroma Key in OBS */
+            box-sizing: border-box;
+        }
+
+        body {
             background-color: #00FF00;
             overflow: hidden;
             font-family: 'Oswald', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .ticker-container {
             position: absolute;
             bottom: 40px;
+            left: 0;
             width: 100%;
             overflow: hidden;
             white-space: nowrap;
-            /* Dark gradient evoking the GTA V pause-menu style */
-            background: linear-gradient(90deg, rgba(10,10,10,0.9) 0%, rgba(25,25,25,0.95) 50%, rgba(10,10,10,0.9) 100%);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.9);
-            padding: 15px 0;
-            display: flex;
-            /* 3D stacking context for GPU-composited children */
-            perspective: 1000px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+            box-shadow:
+                0 -2px 15px rgba(0,0,0,0.8),
+                0  8px 25px rgba(0,0,0,0.9),
+                inset 0 1px 0 rgba(255,255,255,0.05);
+            padding: 14px 0;
         }
 
-        /* GTA V status bars: Health (green), Armor (blue), Special (yellow) */
+        /* GTA V status bars: green / blue / yellow */
         .ticker-container::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 5px;
+            height: 4px;
             background: linear-gradient(90deg,
                 #54b647 0%, #54b647 33%,
                 #2277c9 33%, #2277c9 66%,
                 #f2d535 66%, #f2d535 100%
             );
+            z-index: 2;
         }
 
-        .ticker-text {
+        .ticker-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                rgba(84,182,71,0.4),
+                rgba(34,119,201,0.4),
+                rgba(242,213,53,0.4)
+            );
+            z-index: 2;
+        }
+
+        /* Scroll track — moves via JS transform */
+        .ticker-track {
             display: inline-block;
             white-space: nowrap;
-            /* GPU-accelerated scroll: promote to its own compositing layer */
             will-change: transform;
             backface-visibility: hidden;
-            animation: scroll-left 35s linear infinite;
+            -webkit-backface-visibility: hidden;
         }
 
         .ticker-content {
             display: inline-block;
-            font-size: 38px;
+            font-size: 36px;
             font-weight: 700;
             color: #ffffff;
             letter-spacing: 1.5px;
-            padding-right: 50px;
+            padding-right: 80px;
             text-transform: uppercase;
-            /* Bold drop-shadow for maximum readability over any game capture */
-            text-shadow: 3px 3px 0px #000, 5px 5px 10px rgba(0,0,0,0.8);
+            text-shadow:
+                2px 2px 0 #000,
+                -1px -1px 0 #000,
+                4px 4px 8px rgba(0,0,0,0.7);
+            line-height: 70px;
+            vertical-align: middle;
         }
 
-        /* GTA-themed colour classes */
-        .gta-money  { color: #54b647; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(84,182,71,0.6); }
-        .gta-wasted { color: #cc0000; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(204,0,0,0.6); }
-        .gta-heist  { color: #f2d535; text-shadow: 3px 3px 0 #000, 0 0 15px rgba(242,213,53,0.6); }
+        /* GTA colour classes */
+        .gta-money {
+            color: #54b647;
+            text-shadow:
+                2px 2px 0 #000, -1px -1px 0 #000,
+                0 0 12px rgba(84,182,71,0.5),
+                0 0 25px rgba(84,182,71,0.25);
+        }
 
-        /* Police siren: alternates red → blue */
+        .gta-wasted {
+            color: #cc0000;
+            text-shadow:
+                2px 2px 0 #000, -1px -1px 0 #000,
+                0 0 12px rgba(204,0,0,0.5),
+                0 0 25px rgba(204,0,0,0.25);
+            animation: wasted-flicker 2.5s ease-in-out infinite;
+        }
+
+        .gta-heist {
+            color: #f2d535;
+            text-shadow:
+                2px 2px 0 #000, -1px -1px 0 #000,
+                0 0 12px rgba(242,213,53,0.5),
+                0 0 25px rgba(242,213,53,0.25);
+        }
+
         .siren {
             font-weight: 900;
-            animation: police-lights 0.8s infinite;
+            animation: police-lights 1s ease-in-out infinite;
         }
 
-        /* Pulsing wanted stars */
         .stars {
-            display: inline-block;
-            color: #ffffff;
-            letter-spacing: -2px;
-            animation: star-pulse 1.5s infinite;
+            display: inline;
+            color: #f2d535;
+            letter-spacing: 2px;
+            animation: star-pulse 2s ease-in-out infinite;
         }
 
-        /* Bullet separator between messages */
         .separator {
-            color: #555;
-            font-size: 24px;
+            display: inline;
+            color: #f2d535;
+            font-size: 20px;
             margin: 0 40px;
             vertical-align: middle;
-            text-shadow: 1px 1px 0 #000;
+            text-shadow: 0 0 8px rgba(242,213,53,0.4);
+            opacity: 0.6;
+            animation: sep-glow 3s ease-in-out infinite;
         }
 
         .emoji {
             display: inline-block;
-            vertical-align: text-bottom;
-            margin: 0 10px;
-            filter: drop-shadow(3px 3px 3px rgba(0,0,0,0.9));
+            vertical-align: middle;
+            font-size: 30px;
+            line-height: 1;
+            margin: 0 8px;
+            padding: 5px 7px;
+            background: #111111;
+            border-radius: 8px;
+            text-shadow: none;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
         }
 
-        /* --- ANIMATIONS --- */
-
-        /* translate3d triggers GPU compositing for a tear-free scroll in OBS */
-        @keyframes scroll-left {
-            0%   { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(-50%, 0, 0); }
-        }
-
+        /* Animations */
         @keyframes police-lights {
-            0%,  49% { color: #ff0000; text-shadow: 3px 3px 0 #000, 0 0 20px #ff0000; }
-            50%, 100% { color: #0066ff; text-shadow: 3px 3px 0 #000, 0 0 20px #0066ff; }
+            0%, 100% {
+                color: #ff0000;
+                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 0 18px #ff0000;
+            }
+            50% {
+                color: #0066ff;
+                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 0 18px #0066ff;
+            }
         }
 
         @keyframes star-pulse {
-            0%, 100% { transform: scale(1);   text-shadow: 3px 3px 0 #000, 0 0  5px #fff; }
-            50%       { transform: scale(1.1); text-shadow: 3px 3px 0 #000, 0 0 20px #fff; }
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.06); }
+        }
+
+        @keyframes wasted-flicker {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.65; }
+        }
+
+        @keyframes sep-glow {
+            0%, 100% { opacity: 0.5; }
+            50%      { opacity: 0.85; }
         }
     </style>
 </head>
 <body>
 
     <div class="ticker-container">
-        <!-- Animated wrapper — cloned by JS below for a seamless infinite loop -->
-        <div class="ticker-text">
-            <div class="ticker-content" id="ticker-source">
-                Welcome to Los Santos <span class="emoji">🌴</span> Drop a <span class="gta-money">'W'</span> in the chat!
-                <span class="separator">★</span>
-                <span class="stars">⭐⭐⭐⭐⭐</span> WANTED LEVEL: Hit <span class="gta-money">LIKE</span> and <span class="siren">SUBSCRIBE</span> to lose the cops! <span class="emoji">🚁</span>
-                <span class="separator">★</span>
-                All Chat is reading this instead of watching the road... <span class="emoji">💥🚗</span>
-                <span class="separator">★</span>
-                Preparing for the next <span class="gta-heist">HEIST</span>! Who's joining the crew? <span class="emoji">💰🔫</span>
-                <span class="separator">★</span>
-                <span class="gta-wasted">WASTED?</span> Never heard of it. Chat, what's our next move? <span class="emoji">🗺️</span>
-                <span class="separator">★</span>
-            </div>
+        <div class="ticker-track" id="ticker-track">
+            <span class="ticker-content" id="ticker-source">Welcome to Los Santos <span class="emoji">🌴</span> Drop a <span class="gta-money">'W'</span> in the chat! <span class="separator">★</span> <span class="stars">⭐⭐⭐⭐⭐</span> WANTED LEVEL: Hit <span class="gta-money">LIKE</span> and <span class="siren">SUBSCRIBE</span> to lose the cops! <span class="emoji">🚁</span> <span class="separator">★</span> All Chat is reading this instead of watching the road… <span class="emoji">💥</span><span class="emoji">🚗</span> <span class="separator">★</span> Preparing for the next <span class="gta-heist">HEIST</span>! Who's joining the crew? <span class="emoji">💰</span><span class="emoji">🔫</span> <span class="separator">★</span> <span class="gta-wasted">WASTED?</span> Never heard of it. Chat, what's our next move? <span class="emoji">🗺️</span> <span class="separator">★</span> Stay subscribed or get 5 <span class="stars">⭐</span> wanted! <span class="emoji">🚔</span> <span class="separator">★</span></span>
         </div>
     </div>
 
     <script>
-        // Append an exact clone of the ticker content so the CSS -50% loop is seamless.
-        // Doing this in JS keeps the HTML source DRY — edits only need to happen once.
-        (function () {
-            var tickerSource = document.getElementById('ticker-source');
-            var tickerClone  = tickerSource.cloneNode(true);
-            tickerClone.removeAttribute('id');
-            tickerSource.parentNode.appendChild(tickerClone);
-        }());
+    (function () {
+        var track = document.getElementById('ticker-track');
+        var src   = document.getElementById('ticker-source');
+
+        // ── Measure one copy using getBoundingClientRect (works for any display) ──
+        var contentW = 0;
+        var offset   = 0;
+        var speed    = 100;  // px/sec — adjust to taste
+        var prevTime = 0;
+        var running  = false;
+
+        function measure() {
+            contentW = src.getBoundingClientRect().width;
+        }
+
+        // ── Create enough clones to always fill the viewport + one extra ──
+        function ensureClones() {
+            measure();
+            if (contentW === 0) return;
+
+            var needed = Math.ceil(window.innerWidth / contentW) + 1;
+            // We already have 1 (the source), count existing clones
+            var existing = track.querySelectorAll('.ticker-clone').length;
+
+            for (var i = existing; i < needed; i++) {
+                var c = src.cloneNode(true);
+                c.removeAttribute('id');
+                c.classList.add('ticker-clone');
+                c.setAttribute('aria-hidden', 'true');
+                track.appendChild(c);
+            }
+        }
+
+        // ── Animation loop ──
+        function tick(now) {
+            if (!prevTime) prevTime = now;
+            var dt = (now - prevTime) * 0.001;
+            prevTime = now;
+
+            // Clamp: if tab was hidden the gap could be huge
+            if (dt > 0.1) dt = 0.0167;
+
+            offset -= speed * dt;
+
+            // Modulo wrap — mathematically seamless, no visual pop
+            if (contentW > 0) {
+                offset = -((-offset) % contentW);
+            }
+
+            track.style.transform = 'translate3d(' + offset.toFixed(2) + 'px,0,0)';
+            requestAnimationFrame(tick);
+        }
+
+        // ── Boot sequence ──
+        function boot() {
+            measure();
+            if (contentW === 0) {
+                // Font / layout not ready — retry
+                setTimeout(boot, 80);
+                return;
+            }
+            ensureClones();
+            if (!running) {
+                running = true;
+                prevTime = 0;
+                requestAnimationFrame(tick);
+            }
+        }
+
+        // Start after web-fonts finish loading
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(function () { setTimeout(boot, 30); });
+        } else {
+            window.addEventListener('load', function () { setTimeout(boot, 30); });
+        }
+
+        // Re-measure + add/remove clones on resize
+        var resizeTimer;
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                measure();
+                ensureClones();
+            }, 120);
+        });
+    })();
     </script>
 
 </body>
