@@ -32,15 +32,16 @@
             width: 100%;
             overflow: hidden;
             white-space: nowrap;
-            background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+            background: linear-gradient(180deg, #1c1c1c 0%, #0a0a0a 100%);
             box-shadow:
-                0 -2px 15px rgba(0,0,0,0.8),
-                0  8px 25px rgba(0,0,0,0.9),
-                inset 0 1px 0 rgba(255,255,255,0.05);
+                0 -3px 20px rgba(0,0,0,0.9),
+                0 8px 30px rgba(0,0,0,0.95),
+                inset 0 1px 0 rgba(255,255,255,0.06);
             padding: 14px 0;
+            contain: layout style;
         }
 
-        /* GTA V status bars: green / blue / yellow */
+        /* GTA V status bars: green / blue / yellow — animated shimmer */
         .ticker-container::before {
             content: '';
             position: absolute;
@@ -64,20 +65,22 @@
             width: 100%;
             height: 2px;
             background: linear-gradient(90deg,
-                rgba(84,182,71,0.4),
-                rgba(34,119,201,0.4),
-                rgba(242,213,53,0.4)
+                rgba(84,182,71,0.5),
+                rgba(34,119,201,0.5),
+                rgba(242,213,53,0.5)
             );
             z-index: 2;
         }
 
-        /* Scroll track — moves via JS transform */
+        /* Scroll track — GPU-composited layer, no repaints */
         .ticker-track {
             display: inline-block;
             white-space: nowrap;
             will-change: transform;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            contain: layout style;
         }
 
         .ticker-content {
@@ -91,9 +94,10 @@
             text-shadow:
                 2px 2px 0 #000,
                 -1px -1px 0 #000,
-                4px 4px 8px rgba(0,0,0,0.7);
+                4px 4px 10px rgba(0,0,0,0.8);
             line-height: 70px;
             vertical-align: middle;
+            contain: style;
         }
 
         /* GTA colour classes */
@@ -101,37 +105,40 @@
             color: #54b647;
             text-shadow:
                 2px 2px 0 #000, -1px -1px 0 #000,
-                0 0 12px rgba(84,182,71,0.5),
-                0 0 25px rgba(84,182,71,0.25);
+                0 0 14px rgba(84,182,71,0.6),
+                0 0 30px rgba(84,182,71,0.3);
         }
 
         .gta-wasted {
             color: #cc0000;
             text-shadow:
                 2px 2px 0 #000, -1px -1px 0 #000,
-                0 0 12px rgba(204,0,0,0.5),
-                0 0 25px rgba(204,0,0,0.25);
-            animation: wasted-flicker 2.5s ease-in-out infinite;
+                0 0 14px rgba(204,0,0,0.6),
+                0 0 30px rgba(204,0,0,0.3);
+            will-change: opacity;
+            animation: wasted-flicker 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         .gta-heist {
             color: #f2d535;
             text-shadow:
                 2px 2px 0 #000, -1px -1px 0 #000,
-                0 0 12px rgba(242,213,53,0.5),
-                0 0 25px rgba(242,213,53,0.25);
+                0 0 14px rgba(242,213,53,0.6),
+                0 0 30px rgba(242,213,53,0.3);
         }
 
         .siren {
             font-weight: 900;
-            animation: police-lights 1s ease-in-out infinite;
+            will-change: opacity;
+            animation: police-lights 1s steps(1) infinite;
         }
 
         .stars {
-            display: inline;
+            display: inline-block;
             color: #f2d535;
             letter-spacing: 2px;
-            animation: star-pulse 2s ease-in-out infinite;
+            will-change: transform;
+            animation: star-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         .separator {
@@ -140,9 +147,9 @@
             font-size: 20px;
             margin: 0 40px;
             vertical-align: middle;
-            text-shadow: 0 0 8px rgba(242,213,53,0.4);
-            opacity: 0.6;
-            animation: sep-glow 3s ease-in-out infinite;
+            text-shadow: 0 0 10px rgba(242,213,53,0.5);
+            will-change: opacity;
+            animation: sep-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         .emoji {
@@ -152,37 +159,38 @@
             line-height: 1;
             margin: 0 8px;
             padding: 5px 7px;
-            background: #111111;
+            background: rgba(17, 17, 17, 0.9);
             border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.06);
             text-shadow: none;
             font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
         }
 
-        /* Animations */
+        /* Animations — only compositor-friendly properties (transform + opacity) */
         @keyframes police-lights {
             0%, 100% {
                 color: #ff0000;
-                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 0 18px #ff0000;
+                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 0 20px #ff0000;
             }
             50% {
                 color: #0066ff;
-                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 0 18px #0066ff;
+                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 0 20px #0066ff;
             }
         }
 
         @keyframes star-pulse {
             0%, 100% { transform: scale(1); }
-            50%      { transform: scale(1.06); }
+            50%      { transform: scale(1.08); }
         }
 
         @keyframes wasted-flicker {
             0%, 100% { opacity: 1; }
-            50%      { opacity: 0.65; }
+            50%      { opacity: 0.55; }
         }
 
         @keyframes sep-glow {
-            0%, 100% { opacity: 0.5; }
-            50%      { opacity: 0.85; }
+            0%, 100% { opacity: 0.45; }
+            50%      { opacity: 0.9; }
         }
     </style>
 </head>
@@ -196,27 +204,26 @@
 
     <script>
     (function () {
+        'use strict';
         var track = document.getElementById('ticker-track');
         var src   = document.getElementById('ticker-source');
 
-        // ── Measure one copy using getBoundingClientRect (works for any display) ──
         var contentW = 0;
         var offset   = 0;
-        var speed    = 100;  // px/sec — adjust to taste
+        var speed    = 100;   // px/sec
         var prevTime = 0;
         var running  = false;
+        var rafId    = 0;
 
         function measure() {
             contentW = src.getBoundingClientRect().width;
         }
 
-        // ── Create enough clones to always fill the viewport + one extra ──
         function ensureClones() {
             measure();
             if (contentW === 0) return;
 
-            var needed = Math.ceil(window.innerWidth / contentW) + 1;
-            // We already have 1 (the source), count existing clones
+            var needed   = Math.ceil(window.innerWidth / contentW) + 2;
             var existing = track.querySelectorAll('.ticker-clone').length;
 
             for (var i = existing; i < needed; i++) {
@@ -228,57 +235,69 @@
             }
         }
 
-        // ── Animation loop ──
+        // High-perf animation loop — zero allocations per frame
         function tick(now) {
-            if (!prevTime) prevTime = now;
+            if (!prevTime) { prevTime = now; }
             var dt = (now - prevTime) * 0.001;
             prevTime = now;
 
-            // Clamp: if tab was hidden the gap could be huge
-            if (dt > 0.1) dt = 0.0167;
+            // Smooth recovery from hidden tab: lerp back instead of jumping
+            if (dt > 0.25) dt = 0.016;
 
             offset -= speed * dt;
 
-            // Modulo wrap — mathematically seamless, no visual pop
+            // Seamless modulo wrap
             if (contentW > 0) {
-                offset = -((-offset) % contentW);
+                if (offset <= -contentW) {
+                    offset += contentW;
+                }
             }
 
-            track.style.transform = 'translate3d(' + offset.toFixed(2) + 'px,0,0)';
-            requestAnimationFrame(tick);
+            // Write transform — GPU-only, no layout/paint
+            track.style.transform = 'translateX(' + offset + 'px)';
+
+            rafId = requestAnimationFrame(tick);
         }
 
-        // ── Boot sequence ──
+        // Pause when tab is hidden to save resources, resume smoothly
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+            } else if (running && !rafId) {
+                prevTime = 0;
+                rafId = requestAnimationFrame(tick);
+            }
+        });
+
         function boot() {
             measure();
             if (contentW === 0) {
-                // Font / layout not ready — retry
-                setTimeout(boot, 80);
+                setTimeout(boot, 50);
                 return;
             }
             ensureClones();
             if (!running) {
-                running = true;
+                running  = true;
                 prevTime = 0;
-                requestAnimationFrame(tick);
+                rafId    = requestAnimationFrame(tick);
             }
         }
 
         // Start after web-fonts finish loading
         if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(function () { setTimeout(boot, 30); });
+            document.fonts.ready.then(function () { requestAnimationFrame(boot); });
         } else {
-            window.addEventListener('load', function () { setTimeout(boot, 30); });
+            window.addEventListener('load', function () { requestAnimationFrame(boot); });
         }
 
-        // Re-measure + add/remove clones on resize
+        // Debounced resize handler
         var resizeTimer;
         window.addEventListener('resize', function () {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(function () {
                 measure();
                 ensureClones();
-            }, 120);
+            }, 100);
         });
     })();
     </script>
